@@ -9,13 +9,14 @@ extern crate self as solana_sdk;
 pub use signer::signers;
 pub use solana_program::*;
 
+pub mod zcom_keypair;
+
 pub mod account;
 pub mod account_utils;
 pub mod builtins;
 pub mod client;
 pub mod commitment_config;
 pub mod compute_budget;
-pub mod derivation_path;
 pub mod deserialize_utils;
 pub mod ed25519_instruction;
 pub mod entrypoint;

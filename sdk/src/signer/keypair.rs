@@ -2,13 +2,10 @@
 
 use {
     crate::{
-        derivation_path::DerivationPath,
         pubkey::Pubkey,
         signature::Signature,
         signer::{Signer, SignerError},
     },
-    ed25519_dalek::Signer as DalekSigner,
-    ed25519_dalek_bip32::Error as Bip32Error,
     hmac::Hmac,
     rand::{rngs::OsRng, CryptoRng, RngCore},
     std::{
@@ -18,12 +15,13 @@ use {
         path::Path,
     },
     wasm_bindgen::prelude::*,
+    solana_sdk::zcom_keypair,
 };
 
 /// A vanilla Ed25519 key pair
 #[wasm_bindgen]
 #[derive(Debug)]
-pub struct Keypair(ed25519_dalek::Keypair);
+pub struct Keypair(zcom_keypair::Keypair);
 
 impl Keypair {
     /// Constructs a new, random `Keypair` using a caller-proveded RNG
@@ -31,7 +29,7 @@ impl Keypair {
     where
         R: CryptoRng + RngCore,
     {
-        Self(ed25519_dalek::Keypair::generate(csprng))
+        Self(zcom_keypair::Keypair::generate(csprng))
     }
 
     /// Constructs a new, random `Keypair` using `OsRng`
@@ -41,8 +39,8 @@ impl Keypair {
     }
 
     /// Recovers a `Keypair` from a byte array
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ed25519_dalek::SignatureError> {
-        ed25519_dalek::Keypair::from_bytes(bytes).map(Self)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, zcom_keypair::Error> {
+        zcom_keypair::Keypair::from_bytes(bytes).map(Self)
     }
 
     /// Returns this `Keypair` as a byte array
@@ -61,7 +59,7 @@ impl Keypair {
     }
 
     /// Gets this `Keypair`'s SecretKey
-    pub fn secret(&self) -> &ed25519_dalek::SecretKey {
+    pub fn secret(&self) -> &zcom_keypair::SecretKey {
         &self.0.secret
     }
 }
@@ -100,7 +98,7 @@ where
 /// Reads a JSON-encoded `Keypair` from a `Reader` implementor
 pub fn read_keypair<R: Read>(reader: &mut R) -> Result<Keypair, Box<dyn error::Error>> {
     let bytes: Vec<u8> = serde_json::from_reader(reader)?;
-    let dalek_keypair = ed25519_dalek::Keypair::from_bytes(&bytes)
+    let dalek_keypair = zcom_keypair::Keypair::from_bytes(&bytes)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
     Ok(Keypair(dalek_keypair))
 }
@@ -154,38 +152,14 @@ pub fn write_keypair_file<F: AsRef<Path>>(
 
 /// Constructs a `Keypair` from caller-provided seed entropy
 pub fn keypair_from_seed(seed: &[u8]) -> Result<Keypair, Box<dyn error::Error>> {
-    if seed.len() < ed25519_dalek::SECRET_KEY_LENGTH {
+    if seed.len() < zcom_keypair::SECRET_KEY_LENGTH {
         return Err("Seed is too short".into());
     }
-    let secret = ed25519_dalek::SecretKey::from_bytes(&seed[..ed25519_dalek::SECRET_KEY_LENGTH])
+    let secret = zcom_keypair::SecretKey::from_bytes(&seed[..zcom_keypair::SECRET_KEY_LENGTH])
         .map_err(|e| e.to_string())?;
-    let public = ed25519_dalek::PublicKey::from(&secret);
-    let dalek_keypair = ed25519_dalek::Keypair { secret, public };
+    let public = zcom_keypair::PublicKey::from(&secret);
+    let dalek_keypair = zcom_keypair::Keypair { secret, public };
     Ok(Keypair(dalek_keypair))
-}
-
-/// Generates a Keypair using Bip32 Hierarchical Derivation if derivation-path is provided;
-/// otherwise generates the base Bip44 Solana keypair from the seed
-pub fn keypair_from_seed_and_derivation_path(
-    seed: &[u8],
-    derivation_path: Option<DerivationPath>,
-) -> Result<Keypair, Box<dyn error::Error>> {
-    let derivation_path = derivation_path.unwrap_or_default();
-    bip32_derived_keypair(seed, derivation_path).map_err(|err| err.to_string().into())
-}
-
-/// Generates a Keypair using Bip32 Hierarchical Derivation
-fn bip32_derived_keypair(
-    seed: &[u8],
-    derivation_path: DerivationPath,
-) -> Result<Keypair, Bip32Error> {
-    let extended = ed25519_dalek_bip32::ExtendedSecretKey::from_seed(seed)
-        .and_then(|extended| extended.derive(&derivation_path))?;
-    let extended_public_key = extended.public_key();
-    Ok(Keypair(ed25519_dalek::Keypair {
-        secret: extended.secret_key,
-        public: extended_public_key,
-    }))
 }
 
 pub fn generate_seed_from_seed_phrase_and_passphrase(

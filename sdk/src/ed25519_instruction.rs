@@ -3,7 +3,7 @@
 use {
     crate::{feature_set::FeatureSet, instruction::Instruction, precompiles::PrecompileError},
     bytemuck::{bytes_of, Pod, Zeroable},
-    ed25519_dalek::{ed25519::signature::Signature, Signer, Verifier},
+    solana_sdk::zcom_keypair,
     std::sync::Arc,
 };
 
@@ -26,7 +26,7 @@ pub struct Ed25519SignatureOffsets {
     message_instruction_index: u16,    // index of instruction data to get message data
 }
 
-pub fn new_ed25519_instruction(keypair: &ed25519_dalek::Keypair, message: &[u8]) -> Instruction {
+pub fn new_ed25519_instruction(keypair: &zcom_keypair::Keypair, message: &[u8]) -> Instruction {
     let signature = keypair.sign(message).to_bytes();
     let pubkey = keypair.public.to_bytes();
 
@@ -118,7 +118,7 @@ pub fn verify(
         )?;
 
         let signature =
-            Signature::from_bytes(signature).map_err(|_| PrecompileError::InvalidSignature)?;
+            zcom_keypair::Signature::from_bytes(signature).map_err(|_| PrecompileError::InvalidSignature)?;
 
         // Parse out pubkey
         let pubkey = get_data_slice(
@@ -129,7 +129,7 @@ pub fn verify(
             PUBKEY_SERIALIZED_SIZE,
         )?;
 
-        let publickey = ed25519_dalek::PublicKey::from_bytes(pubkey)
+        let publickey = zcom_keypair::PublicKey::from_bytes(pubkey)
             .map_err(|_| PrecompileError::InvalidPublicKey)?;
 
         // Parse out message
@@ -140,7 +140,6 @@ pub fn verify(
             offsets.message_data_offset,
             offsets.message_data_size as usize,
         )?;
-
         publickey
             .verify(message, &signature)
             .map_err(|_| PrecompileError::InvalidSignature)?;
@@ -345,7 +344,7 @@ pub mod test {
     fn test_ed25519() {
         solana_logger::setup();
 
-        let privkey = ed25519_dalek::Keypair::generate(&mut thread_rng());
+        let privkey = zcom_keypair::Keypair::generate(&mut thread_rng());
         let message_arr = b"hello";
         let mut instruction = new_ed25519_instruction(&privkey, message_arr);
         let mint_keypair = Keypair::new();
