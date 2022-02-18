@@ -9,6 +9,16 @@ use rand_prev::SeedableRng;
 use sha2::{Digest, Sha256};
 use rand_prev::prelude::StdRng;
 
+use std::collections::HashMap;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref SK_CACHE: Mutex<HashMap<[u8; 32], SecretKey>> = {
+        let m = HashMap::new();
+        Mutex::new(m)
+    };
+}
 pub const SECRET_KEY_LENGTH:usize = 32;
 
 pub struct Signature {}
@@ -16,6 +26,7 @@ pub struct Signer {}
 pub struct Verifier {}
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct SecretKey { key:[u8; 32], sk:[u8; SECRETKEYBYTES], pk: [u8; PUBLICKEYBYTES]  }
 
 #[derive(Debug)]
@@ -52,6 +63,9 @@ impl Keypair {
 
             sol_sk.key.copy_from_slice(result.as_slice());
             sol_pk.key.copy_from_slice(result.as_slice());
+
+            let mut map = SK_CACHE.lock().unwrap();
+            map.insert(sol_sk.key, sol_sk.clone());
 
             Keypair{secret:sol_sk, public:sol_pk}
     }
