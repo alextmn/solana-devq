@@ -44,7 +44,7 @@ impl Keypair {
     }
 
     /// Returns this `Keypair` as a byte array
-    pub fn to_bytes(&self) -> [u8; 64] {
+    pub fn to_byets(&self) -> [u8; 64] {
         self.0.to_bytes()
     }
 
