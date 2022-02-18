@@ -18,10 +18,22 @@ lazy_static! {
         let m = HashMap::new();
         Mutex::new(m)
     };
+
+    static ref PUB_CACHE: Mutex<HashMap<[u8; 32], PublicKey>> = {
+        let m = HashMap::new();
+        Mutex::new(m)
+    };
+
+    static ref SIG_CACHE: Mutex<HashMap<[u8; 32], Signature>> = {
+        let m = HashMap::new();
+        Mutex::new(m)
+    };
+    
 }
 pub const SECRET_KEY_LENGTH:usize = 32;
 
-pub struct Signature {}
+#[derive(Clone)]
+pub struct Signature {key:[u8; 32], sig: [u8; BYTES]}
 pub struct Signer {}
 pub struct Verifier {}
 
@@ -30,6 +42,7 @@ pub struct Verifier {}
 pub struct SecretKey { key:[u8; 32], sk:[u8; SECRETKEYBYTES], pk: [u8; PUBLICKEYBYTES]  }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct PublicKey { key:[u8; 32], pk:[u8; PUBLICKEYBYTES] }
 
 #[derive(Debug)]
@@ -82,17 +95,33 @@ impl Keypair {
     }
 
     pub fn to_bytes(&self) -> [u8; 64] {
-        panic!("not implemented yet");
+        let mut k = [0u8; 64];
+        k.copy_from_slice(&self.secret.key[..]);
+        k
     }
 
     pub fn sign(&self, msg: &[u8]) -> Signature {
-        panic!("not implemented yet");
+        let mut sig = [0u8; BYTES];
+        sign(&mut sig, &msg, &self.secret.sk);
+        
+        let mut hasher  =  Sha256::new();
+        hasher.update(&sig);
+        let result = hasher.finalize();
+
+        let mut key = [0u8; 32];
+        key.copy_from_slice(&result.as_slice());
+
+        let s = Signature{key, sig};
+
+        let mut map = SIG_CACHE.lock().unwrap();
+        map.insert(s.key, s.clone());
+        s
     }
 }
 
 impl Signature {
     pub fn to_bytes(&self) -> [u8; 32] {
-        panic!("not implemented yet");
+        self.key
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
         panic!("not implemented yet");
@@ -117,7 +146,9 @@ impl PublicKey {
         PublicKey {key: sk.key, pk: sk.pk}
     }
     pub fn to_bytes(&self) -> [u8; 32] {
-        panic!("not implemented yet");
+        let mut k = [0u8; 32];
+        k.copy_from_slice(&self.key[..]);
+        k
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
         panic!("not implemented yet");
