@@ -6,7 +6,7 @@ use dilithium::params::*;
 use dilithium::sign::{ keypair, sign, verify };
 use rand::{CryptoRng, RngCore};
 use rand_prev::SeedableRng;
-use sha2::{Digest, Sha256};
+use sha2::{Digest, Sha256, Sha512};
 use rand_prev::prelude::StdRng;
 
 use std::collections::HashMap;
@@ -24,7 +24,7 @@ lazy_static! {
         Mutex::new(m)
     };
 
-    static ref SIG_CACHE: Mutex<HashMap<[u8; 32], Signature>> = {
+    static ref SIG_CACHE: Mutex<HashMap<[u8; 64], Signature>> = {
         let m = HashMap::new();
         Mutex::new(m)
     };
@@ -33,16 +33,19 @@ lazy_static! {
 pub const SECRET_KEY_LENGTH:usize = 32;
 
 #[derive(Clone)]
-pub struct Signature {key:[u8; 32], sig: [u8; BYTES]}
+#[derive(Copy)]
+pub struct Signature {key:[u8; 64], sig: [u8; BYTES] }
 pub struct Signer {}
 pub struct Verifier {}
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(Copy)]
 pub struct SecretKey { key:[u8; 32], sk:[u8; SECRETKEYBYTES], pk: [u8; PUBLICKEYBYTES]  }
 
 #[derive(Debug)]
 #[derive(Clone)]
+#[derive(Copy)]
 pub struct PublicKey { key:[u8; 32], pk:[u8; PUBLICKEYBYTES] }
 
 #[derive(Debug)]
@@ -59,7 +62,7 @@ impl Keypair {
     where
         R: RngCore  + CryptoRng,
         {
-            // seed for the dilithium key
+            // seed for the dilithium key, TODO: 2.5 KB
             let mut seed = [0u8; 32];
             csprng.fill_bytes(&mut seed);
             let mut rng = StdRng::from_seed(seed);
@@ -104,11 +107,11 @@ impl Keypair {
         let mut sig = [0u8; BYTES];
         sign(&mut sig, &msg, &self.secret.sk);
         
-        let mut hasher  =  Sha256::new();
+        let mut hasher  =  Sha512::new();
         hasher.update(&sig);
         let result = hasher.finalize();
 
-        let mut key = [0u8; 32];
+        let mut key = [0u8; 64];
         key.copy_from_slice(&result.as_slice());
 
         let s = Signature{key, sig};
@@ -120,11 +123,12 @@ impl Keypair {
 }
 
 impl Signature {
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> [u8; 64] {
         self.key
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
-        panic!("not implemented yet");
+        let map = SIG_CACHE.lock().unwrap();
+        Ok(map[bytes])
     }
 }
 
@@ -151,10 +155,15 @@ impl PublicKey {
         k
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
-        panic!("not implemented yet");
+        let map = PUB_CACHE.lock().unwrap();
+        Ok(map[bytes])
     }
     pub fn verify(&self, message:&[u8], signature: &Signature)-> Result<Self, Error>{
-        panic!("not implemented yet");
+        let result = verify(&message, &signature.sig, &self.pk);
+        match result {
+            true => Ok(*self),
+            false => Err(Error{}),
+        }
     }
     pub fn verify_strict(&self, message:&[u8], signature: &Signature)-> Result<(), Error>{
         panic!("not implemented yet");
