@@ -83,6 +83,9 @@ impl Keypair {
             let mut map = SK_CACHE.lock().unwrap();
             map.insert(sol_sk.key, sol_sk.clone());
 
+            let mut map_pk = PUB_CACHE.lock().unwrap();
+            map_pk.insert(sol_pk.key, sol_pk.clone());
+
             Keypair{secret:sol_sk, public:sol_pk}
     }
 
@@ -99,7 +102,7 @@ impl Keypair {
 
     pub fn to_bytes(&self) -> [u8; 64] {
         let mut k = [0u8; 64];
-        k.copy_from_slice(&self.secret.key[..]);
+        k[..32].copy_from_slice(&self.secret.key[..]);
         k
     }
 
@@ -128,7 +131,10 @@ impl Signature {
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
         let map = SIG_CACHE.lock().unwrap();
-        Ok(map[bytes])
+        match map.get(bytes) {
+            Some(val) => Ok(*val),
+            None => Err(Error{}),
+        }
     }
 }
 
@@ -166,12 +172,17 @@ impl PublicKey {
         }
     }
     pub fn verify_strict(&self, message:&[u8], signature: &Signature)-> Result<(), Error>{
-        panic!("not implemented yet");
+        let result = verify(&message, &signature.sig, &self.pk);
+        match result {
+            true => Ok(()),
+            false => Err(Error{}),
+        }
     }
 }
 
 impl Error {
     pub fn to_string(&self) -> String {
+        
         panic!("not implemented yet");
     }
 }
