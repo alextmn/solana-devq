@@ -133,7 +133,7 @@ impl Signature {
         let map = SIG_CACHE.lock().unwrap();
         match map.get(bytes) {
             Some(val) => Ok(*val),
-            None => Err(Error{}),
+            None => Ok(Signature{key:[0u8; 64],sig:[0u8; BYTES] }),
         }
     }
 }
@@ -162,7 +162,10 @@ impl PublicKey {
     }
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
         let map = PUB_CACHE.lock().unwrap();
-        Ok(map[bytes])
+        match map.contains_key(bytes){
+            true => Ok(map[bytes]),
+            false => Ok(PublicKey{ key:[0u8; 32], pk:[0u8; PUBLICKEYBYTES]}),
+        } 
     }
     pub fn verify(&self, message:&[u8], signature: &Signature)-> Result<Self, Error>{
         let result = verify(&message, &signature.sig, &self.pk);
