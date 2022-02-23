@@ -90,6 +90,16 @@ impl Keypair {
     }
 
     pub fn from_bytes(bytes: &[u8])-> Result<Self, Error>{
+        {
+            let map = SK_CACHE.lock().unwrap();
+            let k = &bytes[..32];
+            if map.contains_key(k) {
+                let sol_sk = map[k];
+                let sol_pk = PublicKey{key:sol_sk.key.clone(), pk: sol_sk.pk.clone()};
+                return Ok( Keypair{secret:sol_sk, public:sol_pk});
+            }
+        }
+
         let mut hasher  =  Sha256::new();
         hasher.update(bytes);
         let result = hasher.finalize();
