@@ -91,6 +91,11 @@ lazy_static! {
             Some(ed25519_program_enabled::id()),
             crate::ed25519_instruction::verify,
         ),
+        Precompile::new(
+            crate::zcom_key_program::id(),
+            Some(ed25519_program_enabled::id()),
+            crate::zcom_key_instruction::verify,
+        ),
     ];
 }
 

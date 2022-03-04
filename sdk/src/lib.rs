@@ -19,6 +19,7 @@ pub mod commitment_config;
 pub mod compute_budget;
 pub mod deserialize_utils;
 pub mod ed25519_instruction;
+pub mod zcom_key_instruction;
 pub mod entrypoint;
 pub mod entrypoint_deprecated;
 pub mod epoch_info;

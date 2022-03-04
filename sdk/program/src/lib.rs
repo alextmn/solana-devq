@@ -16,6 +16,7 @@ pub mod clock;
 pub mod debug_account_data;
 pub mod decode_error;
 pub mod ed25519_program;
+pub mod zcom_key_program;
 pub mod entrypoint;
 pub mod entrypoint_deprecated;
 pub mod epoch_schedule;
