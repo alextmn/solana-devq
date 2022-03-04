@@ -146,6 +146,9 @@ impl Signature {
             None => Ok(Signature{key:[0u8; 64],sig:[0u8; BYTES] }),
         }
     }
+    pub fn sig_value(&self) -> Vec<u8> {
+        self.sig.to_vec()
+    }
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -190,6 +193,10 @@ impl PublicKey {
             true => Ok(()),
             false => Err(Error{}),
         }
+    }
+
+    pub fn pk_value(&self) -> Vec<u8> {
+        self.pk.to_vec()
     }
 }
 
