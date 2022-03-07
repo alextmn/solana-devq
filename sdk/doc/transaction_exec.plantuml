@@ -1,0 +1,11 @@
+@startuml
+Bob -> Validator: find smart contract
+Bob -> SDK: execute transaction
+SDK -> Bob: tx input, output
+Bob -> Bob: add fee, sign tx
+Bob -> Validator: Send tx
+
+Validator->Validator: execute transaction
+Validator->Validator: check signature for tx input, output
+Validator->Validator: collect the fee and sing the block
+@enduml

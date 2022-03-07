@@ -1,0 +1,8 @@
+@startuml
+Validator -> Alice: receive SOL
+SmartContract -> SDK: compile
+Alice -> SDK: new transaction: add fee, sign
+Alice -> Validator: send
+Validator -> Validator: include in blockchain, collect fee, sign
+
+@enduml

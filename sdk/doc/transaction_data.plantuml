@@ -1,0 +1,29 @@
+@startuml
+class Transaction {
+    signatures : List<byte[64]> 
+    message: Message
+    bool isValid()
+}
+class Message { 
+    header: MessageHeader
+    account_keys:  List<byte[32]> [PubKey]
+    instructions : List<Instruction> 
+    resentHash: Hash
+    bool isValid()
+}
+
+class Instruction {
+   programId : byte[32]
+   data : ByteBuffer
+    bool isValid()
+}
+
+class MessageHeader {
+    num_required_signatures: byte,
+    num_readonly_signed_accounts: byte,
+    num_readonly_unsigned_accounts: byte,
+}
+Transaction --  Message
+Message -- MessageHeader
+Message *-- "many" Instruction
+@enduml

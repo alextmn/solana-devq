@@ -1,0 +1,13 @@
+@startuml
+
+[*] --> Alice_PubKEY: (5 coins)
+Alice_PubKEY --> Alice_PubKEY : sign Alice_SK (+3)
+Alice_PubKEY --> Bob_PubKEY : sign Alice_SK (-2)
+Alice_PubKEY : this is a string
+
+Alice_PubKEY: private key 
+Alice_PubKEY: *2 coins out (-)
+Alice_PubKEY: *3 coins in (+)
+Bob_PubKEY: no private key yet
+Bob_PubKEY: *2 coins in (+)
+@enduml
